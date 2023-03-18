@@ -3,6 +3,8 @@ import datetime
 
 # Rounds per draw size
 
+EXHAUSTION_DATA_FILE = "data_with_exhaustion_groups.csv"
+
 ROUNDS32 = {
     "Q1": 1,
     "Q2": 2,
@@ -55,12 +57,6 @@ ROUNDS128 = {
     "W": 11
 }
 
-# Exhaustion Levels
-
-
-# TODO: should I work with player id?
-# TODO: handle winners
-
 
 def calculate_players_exhaustion_severity(player_id, df):
     loser_player_data = df.loc[df['loser_id'].isin({player_id})]
@@ -70,7 +66,6 @@ def calculate_players_exhaustion_severity(player_id, df):
     calculate_players_exhaustion_severity_helper(winner_player_data, df)
 
 
-# todo: fix bug where updating a row doesnt update the dataframe
 def calculate_players_exhaustion_severity_helper(player_data, df):
     player_data = player_data.sort_values('tourney_date', ascending=False)
 
@@ -78,13 +73,6 @@ def calculate_players_exhaustion_severity_helper(player_data, df):
         if not (get_related_map(int(row_a['draw_size'])) is None):
             rounds_played = get_related_map(int(row_a['draw_size'])).get(row_a['round'])
             for j, row_b in player_data.iterrows():
-            # if row_b['tourney_date'] < row_a['tourney_date']:
-            #     days_passed = (parse_date(row_a['tourney_date']) - parse_date(row_b['tourney_date'])).days
-            #     if 0 < days_passed < 21:
-            #         # row_b[1]['exhaustion_index'] += (21 - days_passed) * rounds_played
-            #         new_exhaustion_index = (21 - days_passed) * rounds_played
-            #         prev_exhaustion_index = df.at[j, 'exhaustion_index']
-            #         df.at[j, 'exhaustion_index'] = prev_exhaustion_index + new_exhaustion_index
                 days_passed = (parse_date(row_a['tourney_date']) - parse_date(row_b['tourney_date'])).days
                 if 0 < days_passed < 21:
                     new_exhaustion_index = (21 - days_passed) * rounds_played
@@ -95,18 +83,17 @@ def calculate_players_exhaustion_severity_helper(player_data, df):
                     player_data.at[j, 'exhaustion_index'] = prev_exhaustion_index + new_exhaustion_index
                     df.at[j, 'exhaustion_index'] = prev_exhaustion_index + new_exhaustion_index
 
-    # for row in player_data.iterrows():
-    #     row[1]['exhaustion_severity_group'] = get_exhaustion_severity_group(row[1]["exhaustion_index"])
 
-
-def analyze_data(df, output):
-    for severity_level in {'A', 'B', 'C', 'D', 'E', 'F', 'G'}:
+def analyze_data(output):
+    df = pd.read_csv("data_with_exhaustion_groups.csv")
+    for severity_level in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
         output.write("\n*** Exhaustion Severity Level " + severity_level + " ***\n")
-        # severity_level_data = df.loc(df['exhaustion_severity_group'].equals(severity_level))
-        analyze_severity_level(df, output, severity_level)
+        severity_level_data = df.loc[df['exhaustion_severity_group'].isin({severity_level})]
+
+        analyze_severity_level_data(severity_level_data, output)
 
 
-def analyze_severity_level(df, output, severity_level):
+def analyze_severity_level_data(df, output):
     for i in range(1, 11):
         output.write("\n")
         output.write("G" + str(i) + ":\n\t")
@@ -115,20 +102,13 @@ def analyze_severity_level(df, output, severity_level):
         lower_b = 400 + 30 * (i - 1)
         upper_b = 400 + 30 * i - 1
 
-        t = type(df)
-        # losers = df.loc[(df['exhaustion_severity_group'].equals(severity_level)) & (df['loser_rank'].isin(range(lower_b, upper_b)))]
         losers_rank = df.loc[(df['loser_rank'].isin(range(lower_b, upper_b)))]
-        t = type(losers_rank)
-        losers_rank_sev_level = losers_rank.loc[(losers_rank['exhaustion_severity_group'] == severity_level)]
 
-
-        # winners = df.loc[df['exhaustion_severity_group'].equals(severity_level) & df['winner_rank'].isin(range(lower_b, upper_b))]
-        winners_rank = df.loc[df['winner_rank'].isin(range(lower_b, upper_b))]
-        winners_rank_sev_level = winners_rank.loc[(winners_rank['exhaustion_severity_group'] == severity_level)]
+        winners = df.loc[(df['winner_rank'].isin(range(lower_b, upper_b)))]
 
         for tourney in tourneys:
-            losers_in_tourney = losers_rank_sev_level.loc[losers_rank_sev_level['tourney_level'].isin({tourney})]
-            winners_in_tourney = winners_rank_sev_level.loc[winners_rank_sev_level['tourney_level'].isin({tourney})]
+            losers_in_tourney = losers_rank.loc[losers_rank['tourney_level'].isin({tourney})]
+            winners_in_tourney = winners.loc[winners['tourney_level'].isin({tourney})]
             tourney_rounds_sum = 0
             tourney_rounds_count = 0
             for j in range(losers_in_tourney.shape[0]):
@@ -159,14 +139,11 @@ def analyze_severity_level(df, output, severity_level):
                     tourney_rounds_sum += ROUNDS128.get("W")
                     tourney_rounds_count += 1
 
-            print("tourney_rounds_sum: ", tourney_rounds_sum)
-            print("tourney_rounds_count", tourney_rounds_count)
             if tourney_rounds_count != 0:
                 output.write(tourney + " : " + str(tourney_rounds_sum / tourney_rounds_count) + "\n\t")
-
             else:
                 output.write(tourney + " : " + "n/a" + "\n\t")
-                print("zero")
+
 
 # assuming date is string
 def parse_date(date):
@@ -201,24 +178,24 @@ def get_related_map(draw_size):
 # G is worst
 #
 def get_exhaustion_severity_group(exhaustion_index):
-    if exhaustion_index <= 32:
+    if exhaustion_index <= 330:
         return 'A'
-    elif 33 <= exhaustion_index <= 66:
+    elif 331 <= exhaustion_index <= 660:
         return 'B'
-    elif 67 <= exhaustion_index <= 100:
+    elif 661 <= exhaustion_index <= 990:
         return 'C'
-    elif 101 <= exhaustion_index <= 134:
+    elif 991 <= exhaustion_index <= 1320:
         return 'D'
-    elif 135 <= exhaustion_index <= 168:
+    elif 1321 <= exhaustion_index <= 1650:
         return 'E'
-    elif 169 <= exhaustion_index <= 202:
+    elif 1651 <= exhaustion_index <= 1980:
         return 'F'
-    elif 203 <= exhaustion_index <= 234:
+    elif 1981 <= exhaustion_index <= 2310:
         return 'G'
     else:
         print("Error: Severity group")
 
-
+# Given a file with players data prepare for data analysis by finding the players exhaustion group at a given match
 def analyze_file(file_name):
     df = pd.read_csv(file_name, low_memory=False)
 
@@ -239,17 +216,16 @@ def analyze_file(file_name):
         except:
             print("exception")
 
-    df.to_csv('exhuastion_groups.csv')
+    df.to_csv(EXHAUSTION_DATA_FILE)
+
+    # analyze data
+    analyze_data(output)
+
     output.close()
 
 
 
 if __name__ == '__main__':
-    # analyze_file("wta_matches_qual_itf_2022.csv")
-    df = pd.read_csv('exhuastion_groups.csv', low_memory=False)
+    analyze_file("wta_matches_qual_itf_2022.csv")
     output = open("output.txt", "w")
-    try:
-        analyze_data(df, output)
-    except:
-        print("error")
-    output.close()
+    analyze_data(output)
