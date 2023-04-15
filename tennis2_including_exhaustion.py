@@ -93,6 +93,17 @@ def analyze_data(output):
         analyze_severity_level_data(severity_level_data, output)
 
 
+def get_draw_size_table(draw_size):
+    if draw_size == 32:
+        return ROUNDS32
+    if draw_size == 64:
+        return ROUNDS64
+    if draw_size == 48:
+        return ROUNDS48
+    if draw_size == 128:
+        return ROUNDS128
+
+
 def analyze_severity_level_data(df, output):
     for i in range(1, 11):
         output.write("\n")
@@ -112,31 +123,16 @@ def analyze_severity_level_data(df, output):
             tourney_rounds_sum = 0
             tourney_rounds_count = 0
             for j in range(losers_in_tourney.shape[0]):
-                if int(losers_in_tourney.iloc[j]["draw_size"]) == 32:
-                    tourney_rounds_sum += ROUNDS32.get(losers_in_tourney.iloc[j]["round"])
-                    tourney_rounds_count += 1
-                elif int(losers_in_tourney.iloc[j]["draw_size"]) == 64:
-                    tourney_rounds_sum += ROUNDS64.get(losers_in_tourney.iloc[j]["round"])
-                    tourney_rounds_count += 1
-                elif int(losers_in_tourney.iloc[j]["draw_size"]) == 48:
-                    tourney_rounds_sum += ROUNDS48.get(losers_in_tourney.iloc[j]["round"])
-                    tourney_rounds_count += 1
-                elif int(losers_in_tourney.iloc[j]["draw_size"]) == 128:
-                    tourney_rounds_sum += ROUNDS128.get(losers_in_tourney.iloc[j]["round"])
-                    tourney_rounds_count += 1
+
+                rounds_for_draw_size = get_draw_size_table(int(losers_in_tourney.iloc[j]["draw_size"]))
+                tourney_rounds_sum += rounds_for_draw_size.get(losers_in_tourney.iloc[j]["round"])
+                tourney_rounds_count += 1
 
             for j in range(winners_in_tourney.shape[0]):
-                if int(winners_in_tourney.iloc[j]["draw_size"]) == 32 and winners_in_tourney.iloc[j]["round"] == "F":
-                    tourney_rounds_sum += ROUNDS32.get("W")
-                    tourney_rounds_count += 1
-                if int(winners_in_tourney.iloc[j]["draw_size"]) == 64 and winners_in_tourney.iloc[j]["round"] == "F":
-                    tourney_rounds_sum += ROUNDS64.get("W")
-                    tourney_rounds_count += 1
-                if int(winners_in_tourney.iloc[j]["draw_size"]) == 48 and winners_in_tourney.iloc[j]["round"] == "F":
-                    tourney_rounds_sum += ROUNDS48.get("W")
-                    tourney_rounds_count += 1
-                if int(winners_in_tourney.iloc[j]["draw_size"]) == 128 and winners_in_tourney.iloc[j]["round"] == "F":
-                    tourney_rounds_sum += ROUNDS128.get("W")
+
+                rounds_for_draw_size = get_draw_size_table(int(losers_in_tourney.iloc[j]["draw_size"]))
+                if winners_in_tourney.iloc[j]["round"] == "F":
+                    tourney_rounds_sum += rounds_for_draw_size.get("W")
                     tourney_rounds_count += 1
 
             if tourney_rounds_count != 0:

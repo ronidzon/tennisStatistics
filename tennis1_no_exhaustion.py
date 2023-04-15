@@ -76,7 +76,7 @@ ROUNDS128 = {
 
 def analyze_file(file_name):
     df = pd.read_csv(file_name, low_memory=False)
-    output = open("output.txt", "w")
+    output = open("output1.txt", "w")
 
     for i in range(1, 11):
         output.write("\n")
