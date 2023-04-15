@@ -86,8 +86,6 @@ def get_draw_size_table(draw_size):
 def two_week_strike(players_in_tourney_data, date, player_id):
     for game_index in range(players_in_tourney_data.shape[0]-1):
         # check player didn't play the week before
-        if date - players_in_tourney_data.iloc[game_index]['tourney_date'] > 7:
-            if players_in_tourney_data.iloc[game_index]['loser_id'] == player_id or players_in_tourney_data.iloc[game_index]['winner_id'] == player_id:
         if 0 < date - players_in_tourney_data.iloc[game_index]['tourney_date'] <= 7:
             if players_in_tourney_data.iloc[game_index]['loser_id'] == player_id or players_in_tourney_data.iloc[game_index]['winner_id'] == player_id:
                 # player played a week ago
@@ -205,4 +203,4 @@ def analyze_file(file_name1, file_name2, file_name3):
 
 
 if __name__ == '__main__':
-    analyze_file("wta_matches_qual_itf_2021.csv", "wta_matches_qual_itf_2022.csv", "wta_matches_qual_itf_2023.csv")
+    analyze_file("wta_matches_qual_itf_2022.csv", "wta_matches_qual_itf_2023.csv","atp_matches_qual_chall_2019.csv")
